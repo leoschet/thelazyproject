@@ -31,6 +31,15 @@ class ReutersCollection:
         self.train_docs = list(filter(lambda doc: doc.startswith("train"), self.documents))
         self.test_docs = list(filter(lambda doc: doc.startswith("test"), self.documents))
 
+
+    def get_words(self, document_id):
+        return reuters.words(document_id)
+
+
+    def get_document(self, document_id):
+        return reuters.raw(document_id)
+
+    
     """
     Prints the size of training and test set, the total amount of documents 
     and categories used to retrieve the documents.
@@ -49,6 +58,7 @@ class ReutersCollection:
         all_categories = reuters.categories()
         print ("\tConsidering " + str(len(self.interest_categories)) + " from a total of " + str(len(all_categories)) + " categories\n")
 
+
     """
     Prints the stats of every category of interest
     """
@@ -56,6 +66,7 @@ class ReutersCollection:
     def detailed_stats(self):
         for cat in self.interest_categories:
             self.category_stats(cat)
+
 
     """
     Prints the size of training and test set, the total amount of documents 
@@ -74,6 +85,7 @@ class ReutersCollection:
         print ("\t" + str(len(category_train_docs)) + " total train documents")
         print ("\t" + str(len(category_test_docs)) + " total test documents\n")
 
+
     """
     Prints a preview of the category, including some words and a raw document
 
@@ -83,10 +95,10 @@ class ReutersCollection:
     def preview(self, category):
         # Documents in a category
         category_docs = reuters.fileids(category)
-    
+        
         # Words for a document
         document_id = category_docs[0]
-        document_words = reuters.words(category_docs[0])
+        document_words = reuters.words(document_id)
         print(document_words)
     
         # Raw document
