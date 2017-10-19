@@ -1,5 +1,13 @@
 """
 Subset of reuters 21578, "ModApte", considering only received categories.
+
+util: 
+- http://www.nltk.org/book/ch02.html
+- https://miguelmalvarez.com/2015/03/20/classifying-reuters-21578-collection-with-python-representing-the-data/
+
+might be useful:
+- http://www.nltk.org/howto/corpus.html
+- https://miguelmalvarez.com/2016/11/07/classifying-reuters-21578-collection-with-python/
 """
 
 
