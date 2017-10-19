@@ -5,32 +5,11 @@ import re
 from features.pre_processment import cleaning_steps_builder
 from dataset.retriever import ReutersCollection
 # from inverted_index import InvertedIndex
-# from ranker import Ranker
-
-
-# DIRS
-# rootdir ='../UnityDocumentation/en/Manual'
-
-
-# REGEX
-script_tag_regex = re.compile(r'<script>(.|\n)*</script>')
-html_tags_regex = re.compile(r'<[^>]*>')
-whitespace_regex = re.compile(r'( |\n|[^A-Za-z0-9])+')
 
 
 # FUNCTIONS
 def printu (str):
 	print (str.encode ('utf-8'))
-
-
-def clear_split_document (document):
-	document = script_tag_regex.sub(' ', document)
-	document = html_tags_regex.sub(' ', document)
-	document = whitespace_regex.sub(' ', document)
-
-	# printu (document)
-
-	return document.split(' ')
 
 
 # SCRIPT
@@ -53,18 +32,13 @@ collection = ReutersCollection([
 print ("Collection initialized.")
 collection.stats()
 collection.detailed_stats()
+# collection.preview("corn")
 
 corpus = []
 
-# for _, _, files in os.walk (rootdir):
-# 	for file in files:
-# 		document = open (rootdir + '/' + file, mode='r', encoding='utf-8').read()
-# 		document_terms = clear_split_document (document)
-
-# 		corpus.append((file, document_terms))
-
-# 		# TODO: remove break
-# 		break
+for document_id in collection.documents:
+	corpus.append((document_id, collection.get_words(document_id)))
+	break
 
 document_clean_function = lambda document: cleaning_steps_builder(document, remove_stopwords = False, do_stemming = False)
 document_stop_function = lambda document: cleaning_steps_builder(document, remove_stopwords = True, do_stemming = False)
