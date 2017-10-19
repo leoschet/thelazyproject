@@ -2,7 +2,8 @@ import os
 import re
 
 
-from lib.pre_processment import cleaning_steps_builder
+from features.pre_processment import cleaning_steps_builder
+from dataset.retriever import ReutersCollection
 # from inverted_index import InvertedIndex
 # from ranker import Ranker
 
@@ -33,7 +34,25 @@ def clear_split_document (document):
 
 
 # SCRIPT
-print ('Running the lazy classifier')
+print ("Initializing Reuters 21578 ModApte subset, considering only ten bigger categories...")
+
+# The dataset should only consider the documents from the ten bigger categories
+collection = ReutersCollection([
+	"earn", 
+	"acq", 
+	"money-fx", 
+	"grain", 
+	"crude", 
+	"trade", 
+	"interest", 
+	"ship", 
+	"wheat", 
+	"corn"
+])
+
+print ("Collection initialized.")
+collection.stats()
+collection.detailed_stats()
 
 corpus = []
 
@@ -47,10 +66,10 @@ corpus = []
 # 		# TODO: remove break
 # 		break
 
-document_clean_function = lambda document: stopwords_stemming(document, remove_stopwords = False, do_stemming = False)
-document_stop_function = lambda document: stopwords_stemming(document, remove_stopwords = True, do_stemming = False)
-document_stem_function = lambda document: stopwords_stemming(document, remove_stopwords = False, do_stemming = True)
-document_stop_stem_function = lambda document: stopwords_stemming(document, remove_stopwords = True, do_stemming = True)
+document_clean_function = lambda document: cleaning_steps_builder(document, remove_stopwords = False, do_stemming = False)
+document_stop_function = lambda document: cleaning_steps_builder(document, remove_stopwords = True, do_stemming = False)
+document_stem_function = lambda document: cleaning_steps_builder(document, remove_stopwords = False, do_stemming = True)
+document_stop_stem_function = lambda document: cleaning_steps_builder(document, remove_stopwords = True, do_stemming = True)
 
 # ranker_clean = Ranker(InvertedIndex(corpus, document_clean_function))
 # ranker_stop = Ranker(InvertedIndex(corpus, document_stop_function))
