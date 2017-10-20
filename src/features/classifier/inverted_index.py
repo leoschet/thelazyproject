@@ -42,3 +42,4 @@ class InvertedIndex:
                     self.term_documents[word][1]
                 )
                 self.term_documents[word][1][document_name] += 1
+                
