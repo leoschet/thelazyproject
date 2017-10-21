@@ -39,6 +39,8 @@ class ReutersCollection:
     def get_document(self, document_id):
         return reuters.raw(document_id)
 
+    def get_document_categories(self, document_id):
+        return reuters.categories(document_id)
     
     """
     Prints the size of training and test set, the total amount of documents 
@@ -99,7 +101,8 @@ class ReutersCollection:
         # Words for a document
         document_id = category_docs[0]
         document_words = reuters.words(document_id)
-        print(document_words)
+        for word in (document_words):
+            print (word)
     
         # Raw document
         print(reuters.raw(document_id))
