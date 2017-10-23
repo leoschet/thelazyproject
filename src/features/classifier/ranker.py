@@ -1,117 +1,93 @@
-from inverted_index import InvertedIndex
-from math import log, sqrt
-import numpy as np
+import math
+from functools import reduce
+
+from features.classifier.inverted_index import InvertedIndex
+
 
 class Ranker:
-    inverted_index = None
-    collection = None
-    categories_vectors = {}
-    term_indexer = {}
-
-    def _init_(self, inverted_index, collection):
-        self.inverted_index = inverted_index
-        self.collection = collection
-        self.__build_term_indexer()
-        self.__calculate_categories_vectors()
-        
     """
-    Set the inicial order for term array
+    Receives queries and ranks the documents based on the inverted index, using vector space with TF*IFD as term width
+    calculation formula and cosine as similarity metric.
     """
 
-    def __build_term_indexer(self):
-        index = 0
-        
-        for term in self.inverted_index.term_documents:
-            self.term_indexer[term] = index
-            index += 1
-        
-    """
-    Calculate document vector for each document
-    """
+    def __init__(self, inverted_index, collection):
+        """
+        Initializes the ranker with the received inverted index.
 
-    def __calculate_categories_vectors(self):
-        categories = None
-        
-        for document_name in self.inverted_index.processed_corpus:
-            document_vector = __calculate_document_vector(document_name)
-            __update_categories(document_name, document_vector)
-            
+        :param inverted_index: inverted index
+        """
+        self._collection = collection
+        self._inverted_index = inverted_index
+        self._term_index = {term: index for index, term in enumerate(self._inverted_index.term_cats)}
+        self._cat_vecs = {cat: self._calculate_cat_vec(cat) for cat in self._inverted_index.proc_corpus}
 
-            
-    def __update_categories(self, document_name, document_vector):
-        categories = self.collection.get_document_categories(document_name)
+    def _calculate_cat_vec(self, cat):
+        """
+        Calculates the TF*IFD vector for the received document.
 
-        for category_name in categories:
-            if category_name not in self.categories_vectors:
-                self.categories_vectors[category_name] = (0, len(self.inverted_index.term_documents.keys)*[0])
+        :param doc: document name
+        :return: document vector
+        """
+        cat_vec = len(self._inverted_index.term_cats) * [0]
+        cat_vec_mag = 0
+        for term in self._inverted_index.proc_corpus[cat]:
+            term_freq, term_cats = self._inverted_index.term_cats[term]
+            tf = len(term_cats[cat]) / term_freq
+            idf = math.log(len(self._inverted_index.proc_corpus) / len(term_cats))
+            tf_idf = tf * idf
+            cat_vec[self._term_index[term]] = tf_idf
+            cat_vec_mag += tf_idf ** 2
+        return cat_vec, cat_vec_mag ** (1 / 2)
+ 
+    def _calculate_query_vec(self, terms):
+        """
+        Calculates the TF*IDF vector to the received query terms
 
-            self.categories_vectors[category_name][0] += document_vector[0]
-
-            matrix = np.array([self.categories_vectors[category_name][1], document_vector[1]])
-            self.categories_vectors[category_name][1] = matrix.sum(axis=0)
-
-    """
-    Retorna a tupla da soma dos quadrados(tf*idf) de cada termo e o vetor de tf*idf .
-    """    
-
-    def __calculate_document_vector(self, document_name):
-        document_vector_mag2 = 0
-        document_vector = len(self.inverted_index.term_documents.keys) * [0]
-
-        for term in self.inverted_index.term_documents:
-            (term_frequency, documents) = self.inverted_index.term_documents[term]
-            # TODO: usar normalização
-            tf = documents[document_name] / term_frequency # term frequency on document / total term frequency
-            idf = log(len(self.inverted_index.processed_corpus) / len(documents)) 
-            tfidf = tf * idf
-            document_vector[self.term_indexer[term]] = tfidf
-            document_vector_mag2 += tfidf * tfidf
-        
-        #sqrt(document_vector_mag2)
-        return (document_vector_mag2, document_vector)
-
-    def __calculate_query_vector(self, query_terms):
-        query_vector = len(self.inverted_index.term_documents.keys) * [0]
-        query_inverted_index = InvertedIndex([('query', query_terms)])
-
-        for term in query_inverted_index.term_documents:
-            if term not in self.inverted_index.term_documents.keys:
+        :param terms: list of query terms
+        :return: query vector
+        """
+        query_vec = len(self._inverted_index.term_cats) * [0]
+        query_vec_mag = 0
+        query_inverted_index = InvertedIndex({'query': terms})
+        for term in query_inverted_index.proc_corpus['query']:
+            if term not in self._inverted_index.term_cats:
                 continue
+            query_term_freq, _ = query_inverted_index.term_cats[term]
+            term_freq, term_cats = self._inverted_index.term_cats[term]
+            tf = query_term_freq / term_freq
+            idf = math.log(len(self._inverted_index.proc_corpus) / len(term_cats))
+            tf_idf = tf * idf
+            query_vec[self._term_index[term]] = tf_idf
+            query_vec_mag += tf_idf ** 2
+        return query_vec, query_vec_mag ** (1 / 2)
 
-            (query_term_frequency, _) = query_inverted_index.term_documents[term]            
-            (term_frequency, documents) = self.inverted_index.term_documents[term]
+    def classify(self, query):
+        """
+        Calculates the similarity of a query to all categories
 
-            tf = query_term_frequency / term_frequency
-            idf = log(len(self.inverted_index.processed_corpus) / len(documents))
+        :param query: the query
+        :return: list of categories ordered by similarity
+        """
+        terms = self._inverted_index.clean_func(query)
+        terms = [term for term in terms if term in self._inverted_index.term_cats]
+        query_vec, query_vec_mag = self._calculate_query_vec(terms)
+        similarities = [(cat, self._calculate_similarity(query_vec, query_vec_mag, cat)) for cat in self._inverted_index.proc_corpus.keys()]
+        return sorted(similarities, key=lambda tup: tup[1], reverse=True)
 
-            query_vector[self.term_indexer[term]] = tf * idf
+    def _calculate_similarity(self, query_vec, query_vec_mag, cat):
+        """
+        Calculates the cosine similarity between the received query vector and the cat.
 
-        return query_vector
+        :param query_vec: query vector
+        :param query_vec_mag: query vector magnitude
+        :param cat: category name
+        :return: similarity between query and caegory
+        """
+        cat_vec, cat_vec_mag = self._cat_vecs[cat]
+        denominator = query_vec_mag * cat_vec_mag
+        return 0 if denominator == 0 else sum(map(lambda x, y: x * y, query_vec, cat_vec)) / denominator
 
 
-    """
-    Returns list of similarity of query and categories    
-    """  
-
-    def search(self, query_words):
-        query_terms = self.inverted_index.clean_function(query_words)
-        query_vector = __calculate_query_vector(query_terms)
-
-        # compute similarity
-        similarities = []
-        
-        for document_name in self.document_vectors:
-            (document_vector_mag, document_vector) = document_vectors[document_name]
-            similarity = self.list_similarity(query_vector, document_vector, document_vector_mag)
-            similarities.append((document_name, similarity))
-
-        similarities.sort(key = lambda tuple: tuple[1])
-        return similarities
-
-    def list_similarity(self, query_vector, document_vector, document_vector_mag):
-        dot_product = 0
-
-        for i in range(0, len(query_vector)):
-            dot_product += query_vector[i] * document_vector[i]
-
-        return dot_product / document_vector_mag
+    @staticmethod
+    def _find_consecutive_values(list1, list2):
+        return [y for x in list1 for y in list2 if y > x and y - x <= 2]

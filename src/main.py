@@ -1,10 +1,11 @@
 import os
 import re
 
+from features.pre_processment.cleaning_steps_builder import cleaning_steps_builder
+from features.classifier.inverted_index import InvertedIndex
+from features.classifier.ranker import Ranker
 
-from features.pre_processment import cleaning_steps_builder
 from dataset.retriever import ReutersCollection
-# from inverted_index import InvertedIndex
 
 
 # FUNCTIONS
@@ -34,18 +35,29 @@ collection.stats()
 collection.detailed_stats()
 # collection.preview("corn")
 
-corpus = []
+corpus = {}
 
-for document_id in collection.documents:
-	corpus.append((document_id, collection.get_words(document_id)))
-	break
+for doc_name in collection.train_docs:
+	corpus[doc_name] = collection.get_words(doc_name)
+	# break
 
 document_clean_function = lambda document: cleaning_steps_builder(document, remove_stopwords = False, do_stemming = False)
 document_stop_function = lambda document: cleaning_steps_builder(document, remove_stopwords = True, do_stemming = False)
 document_stem_function = lambda document: cleaning_steps_builder(document, remove_stopwords = False, do_stemming = True)
 document_stop_stem_function = lambda document: cleaning_steps_builder(document, remove_stopwords = True, do_stemming = True)
 
-# ranker_clean = Ranker(InvertedIndex(corpus, document_clean_function))
-# ranker_stop = Ranker(InvertedIndex(corpus, document_stop_function))
+ii = InvertedIndex(corpus, collection, document_stop_function)
+ranker_stop = Ranker(ii, collection)
+
+# ranker_clean = Ranker(corpus, document_clean_function, collection)
+# ranker_stop = Ranker(InvertedIndex(corpus, document_stop_function), collection)
 # ranker_stem = Ranker(InvertedIndex(corpus, document_stem_function))
 # ranker_stop_stem = Ranker(InvertedIndex(corpus, document_stop_stem_function))
+
+for doc in collection.test_docs:
+	rank = ranker_stop.classify(collection.get_words(doc))
+	print(rank)
+	print (collection.get_categories(doc))
+	print("\n")
+
+# rank = ranker_clean.search(collection.get_words(collection.test_docs[0]))

@@ -1,45 +1,55 @@
-"""
-Inverted index of the received documents.
-"""
-
-
 class InvertedIndex:
-    clean_function = None
-    processed_corpus = {}
-    term_documents = {}
-
     """
-    Initializes the inverted index with the received corpus.
+    Inverted index of the received docs.
 
-    :param corpus: [(str, [str])] list of document names and words
-    """
+    Contains the following fields:
 
-    def __init__(self, corpus, clean_function = None):
-        self.clean_function = clean_function
-        self.__build_inverted_index(corpus)
-
-    """
-    Creates the term_document dict based on the document_list and process the corpus with the received clean function.
-    
-    :param corpus: [(str, [str])] list of document names and words
+    :clean_func: used to clean and filter the received corpus doc terms
+    :proc_corpus: resultant corpus from applying clean_func in the original corpus
+    :term_docs: dict of term -> (term_frequency, {doc: [term_doc_indices]})
     """
 
-    def __build_inverted_index(self, corpus):
-        for document in corpus:
-            document_name = document[0]
-            document_words = self.clean_function(document[1]) if self.clean_function is not None else document[1] 
-            self.processed_corpus[document_name] = document_words
-            
-            for word in document_words:
-                if word not in self.term_documents:
-                    self.term_documents[word] = (0, {}) # inicializa
+    def __init__(self, corpus, collection=None, clean_func=None):
+        """
+        Initializes the inverted index with the received corpus.
 
-                if document_name not in self.term_documents[word][1]:
-                    self.term_documents[word][1][document_name] = 0
+        :param corpus: docs to terms dict
+        :param clean_func: function the process a list of words
+        """
+        self._collection = collection
+        self.clean_func = clean_func if clean_func is not None else lambda word: word
 
-                self.term_documents[word] = (
-                    self.term_documents[word][0] + 1,
-                    self.term_documents[word][1]
-                )
-                self.term_documents[word][1][document_name] += 1
-                
+        # Process corpus
+        if collection is None:
+            self.proc_corpus = {doc: self.clean_func(corpus[doc]) for doc in corpus}
+        else:
+            self.proc_corpus = {}
+            for doc in corpus:
+                cats = self._collection.get_categories(doc)
+                for cat in cats:
+                    if cat not in self.proc_corpus:
+                        self.proc_corpus[cat] = []
+
+                    self.proc_corpus[cat] += (self.clean_func(corpus[doc]))
+
+        # self.term_docs = self._build_term_docs(self.proc_corpus)
+        self.term_cats = self._build_term_cats(self.proc_corpus)
+
+    @staticmethod
+    def _build_term_cats(corpus):
+        """
+        Creates the term_cats dict based on the received corpus.
+
+        :param corpus: cats to terms dict
+        """
+        term_cats = {}
+        for cat in corpus:
+            terms = corpus[cat]
+            for index, term in enumerate(terms):
+                if term not in term_cats:
+                    term_cats[term] = (0, {})
+                if cat not in term_cats[term][1]:
+                    term_cats[term][1][cat] = []
+                term_cats[term] = (term_cats[term][0] + 1, term_cats[term][1])
+                term_cats[term][1][cat].append(index)
+        return term_cats
