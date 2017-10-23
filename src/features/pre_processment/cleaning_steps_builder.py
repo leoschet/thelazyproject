@@ -1,11 +1,19 @@
 import nltk
 
+# Regex for text cleaning
+NUMBER_REGEX = re.compile(r'[0-9]')
+NOT_CHAR_REGEX = re.compile(r'[^A-Za-z0-9]')
+
 english_stopwords = nltk.corpus.stopwords.words('english')
 porter_stemmer = nltk.stem.PorterStemmer()
 
 def cleaning_steps_builder(document_terms, remove_stopwords, do_stemming):
 	document_terms = [word.lower() for word in document_terms]
 	
+	document_terms = [NOT_CHAR_REGEX.sub('', word) for word in document_terms]
+	document_terms = ['<NUM>' for word in document_terms if word.startswith(NUMBER_REGEX)]
+	document_terms = [word for word in document_terms if word is not '']
+
 	if (remove_stopwords):
 		document_terms = [word for word in document_terms if word not in english_stopwords]
 	
