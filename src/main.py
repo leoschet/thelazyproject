@@ -47,20 +47,32 @@ document_stem_function = lambda document: cleaning_steps_builder(document, remov
 document_stop_stem_function = lambda document: cleaning_steps_builder(document, remove_stopwords = True, do_stemming = True, do_lemmatizing = False)
 document_stop_lem_stem_function = lambda document: cleaning_steps_builder(document, remove_stopwords = True, do_stemming = True, do_lemmatizing = True)
 
-ii = InvertedIndex(corpus, collection, document_stop_function)
-ranker_stop = Ranker(ii, collection)
+ranker_clean = Ranker(InvertedIndex(corpus, collection, document_clean_function), collection)
+ranker_stop = Ranker(InvertedIndex(corpus, collection, document_stop_function), collection)
+ranker_stem = Ranker(InvertedIndex(corpus, collection, document_stem_function), collection)
+ranker_stop_stem = Ranker(InvertedIndex(corpus, collection, document_stop_stem_function), collection)
+ranker_stop_lem_stem = Ranker(InvertedIndex(corpus, collection, document_stop_lem_stem_function), collection)
 
-# ranker_clean = Ranker(corpus, document_clean_function, collection)
-# ranker_stop = Ranker(InvertedIndex(corpus, document_stop_function), collection)
-# ranker_stem = Ranker(InvertedIndex(corpus, document_stem_function))
-# ranker_stop_stem = Ranker(InvertedIndex(corpus, document_stop_stem_function))
-print(collection.get_document(collection.test_docs[0]))
+# print(collection.get_document(collection.test_docs[0]))
+# words = document_clean_function(collection.get_words(collection.test_docs[0]))
+# string = ''
+
+# for word in words:
+# 	string += word + ' '
+
+# print (string)
 print("\n")
+
+results = {}
+results['ranker_clean'] = []
+results['ranker_stop'] = []
+results['ranker_stem'] = []
+results['ranker_stop_stem'] = []
+results['ranker_stop_lem_stem'] = []
+
 for doc in collection.test_docs:
 	rank = ranker_stop.classify(collection.get_words(doc))
-	#print(rank)
-	#print (collection.get_categories(doc))
-	#print(collection.get_words(doc))
-	#print("\n")
-
-# rank = ranker_clean.search(collection.get_words(collection.test_docs[0]))
+	print(rank)
+	print (collection.get_categories(doc))
+	print(collection.get_words(doc))
+	print("\n")
