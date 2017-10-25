@@ -12,6 +12,7 @@ might be useful:
 
 
 from nltk.corpus import reuters
+from nltk import word_tokenize
 
 class ReutersCollection:
     interest_categories = []
@@ -33,7 +34,7 @@ class ReutersCollection:
 
 
     def get_words(self, document_id):
-        return reuters.words(document_id)
+        return word_tokenize(reuters.raw(document_id))
 
 
     def get_document(self, document_id):
@@ -42,6 +43,11 @@ class ReutersCollection:
     def get_categories(self, document_id):
         return [cat for cat in reuters.categories(document_id) if cat in self.interest_categories]
     
+    def get_train_docs_len(self, category):
+        category_docs = reuters.fileids(category)        
+        return len(list(filter(lambda doc: doc.startswith("train"), category_docs)))
+    
+
     """
     Prints the size of training and test set, the total amount of documents 
     and categories used to retrieve the documents.
@@ -58,7 +64,7 @@ class ReutersCollection:
 
         # List of categories
         all_categories = reuters.categories()
-        print ("\tConsidering " + str(len(self.interest_categories)) + " from a total of " + str(len(all_categories)) + " categories\n")
+        print ("\tConsidering " + str(len(self.interest_categories)) + " from a total of " + str(len(all_categories)) + " categories")
 
 
     """
