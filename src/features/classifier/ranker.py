@@ -32,7 +32,10 @@ class Ranker:
         cat_vec_mag = 0
         for term in self._inverted_index.proc_corpus[cat]:
             term_freq, term_cats = self._inverted_index.term_cats[term]
-            tf = len(term_cats[cat]) / term_freq
+            
+            # By dividing the category term frequency, we get an avarage frequency.
+            # Making the data more similar to test documents
+            tf = (len(term_cats[cat]) / self._collection.get_train_docs_len(cat)) / term_freq
             idf = math.log(len(self._inverted_index.proc_corpus) / len(term_cats))
             tf_idf = tf * idf
             cat_vec[self._term_index[term]] = tf_idf
@@ -72,7 +75,19 @@ class Ranker:
         terms = [term for term in terms if term in self._inverted_index.term_cats]
         query_vec, query_vec_mag = self._calculate_query_vec(terms)
         similarities = [(cat, self._calculate_similarity(query_vec, query_vec_mag, cat)) for cat in self._inverted_index.proc_corpus.keys()]
-        return sorted(similarities, key=lambda tup: tup[1], reverse=True)
+        similarities = sorted(similarities, key=lambda tup: tup[1], reverse=True)
+        
+        # index = 1
+        # cond = True
+        # while index < len(similarities) and cond:
+        #     if (similarities[index-1][1]/3)*2 > similarities[index-1][1] - similarities[index][1]:
+        #         cond = False
+        #     else:
+        #         index += 1
+
+        # return [sim for i, sim in enumerate(similarities) if i < index]
+        # return [sim for sim in similarities if sim[1] > 0.00099]
+        return similarities
 
     def _calculate_similarity(self, query_vec, query_vec_mag, cat):
         """
